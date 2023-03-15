@@ -5,6 +5,10 @@ Mock-up Background: As an online non-subscription, prepared meal delivery servic
 Objective: experiment with different approaches (logistic and RFM) to improve MALM’s emailing yields and profits.
 
 Data: MALM.xlsx -Contain records for 50,000 customers
+
+− ACCTNUM : Customer account number 
+− GENDER : Customer gender (M = Male, F = Female) 
+
 − ACCTNUM : Customer account number 
 − GENDER : Customer gender (M = Male, F = Female) 
 − LAST : Number of weeks since most recent purchase 
