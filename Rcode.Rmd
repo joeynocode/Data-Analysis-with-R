@@ -1,0 +1,335 @@
+---
+title: "nba6340-hw2"
+author: "Justin Ngai"
+date: "2023-02-15"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup
+
+Install and load libraries
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+library(tidyverse)
+library(readxl)
+library(skimr)
+library(ggplot2)
+library(dplyr)
+library(fmsb)
+```
+
+We first load the excel data and gain some basic insights on the distribution of the data
+```{r echo=TRUE, message=FALSE}
+malm <- read_excel("MALM.xlsx", sheet="MALM", col_names = TRUE, col_types = NULL)
+
+# Convert "Buyer" column to bool
+stopifnot(length(unique(malm$buyer)) == 2) # verify that there are only "1" and "0" values
+malm$buyer <- as.logical(malm$buyer)
+
+# Convert "Gender" column to bool
+stopifnot(length(unique(malm$buyer)) == 2) # verify that there are only "F" and "M" values
+malm <- malm %>% 
+  mutate(
+    gender = recode(gender, "M"=1, "F"=0) # Male as 1 and Female as 0
+  )
+
+head(malm, 10)
+dim(malm)
+
+# glimpse(malm)
+# summary(malm)
+
+# skim(malm)
+
+```
+
+
+
+
+## Part I: Logistic Regression
+
+**1. Define dependent variable(s) to apply the logistic regression.**
+
+We set `buyer` as the dependent variable as we want to predict whether or not the consumers will ultimately decide to purchase the product. Also since we are working with logistic regression which only supports binary dependent variables, the `buyer` variable is the best choice we have.
+
+**2. Define independent variable(s). **
+
+```{r}
+# Specify your own feature variables here
+outcome_vars = c("buyer") 
+
+feature_vars = c(
+  "gender", # prob not very helpful
+  "state", # prob not very helpful
+  "zip", # prob not very helpful
+  "zip3", # prob not very helpful
+  "first",
+  "last",
+  "meal$",
+  "nonmeal$",
+  "total$", # just meal + nonmeal
+  "purch",  # just the following summed
+  "dairy_free",
+  "poultry",
+  "pork",
+  "beef",
+  "gluten_free",
+  "vegetarian",
+  "seafood"
+)
+
+xfeature_vars = c(
+  "gender",
+  "last",
+  "total$", # meal$ + nonmeal$
+  "purch"   # purch is the sum of all the categories
+)
+```
+
+```{r}
+logreg = glm(buyer ~ 
+              gender + 
+              # first +
+              last +
+              `meal$` +
+              # `nonmeal$` +
+              # `total$` +    # This is just meal$ + nonmeal$
+              # purch +       # This is just the sum of the following categories
+              # dairy_free +
+              # poultry +
+              # pork +
+              # beef +
+              gluten_free +
+              vegetarian +
+              seafood,
+             data=malm, 
+             family="binomial")
+
+# the output are the coefficients:
+summary(logreg)
+NagelkerkeR2(logreg)
+```
+
+## Part II: Decile Analysis of Logistic Regression Results
+
+**4. Assigning each customer to a decile based on predicted probability of purchase.**
+
+Add predictions
+```{r}
+malm$pred <- predict(logreg, malm, type = "response")
+```
+
+Rank into deciles
+```{r}
+malm_d <- malm %>%
+  mutate(
+    p_rank = ntile(-pred, 10),     # Larger pred value = more likely to buy
+  )
+```
+
+Plot mean *predicted* response rate per decile
+```{r}
+malm_d_avg <- malm_d %>% 
+  group_by(p_rank) %>% 
+  summarise(
+    avg_pred = mean(pred),
+  )
+malm_d_avg
+
+ggplot(malm_d_avg, aes(x=p_rank, y=avg_pred)) + 
+  geom_col(fill="#69b3a2", color="#e9ecef", alpha=0.9) + 
+  ggtitle('Mean pred value per decile')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+```
+
+Plot mean real response rate per decile
+```{r}
+malm_d_avg_real <- malm_d %>% 
+  group_by(p_rank) %>% 
+  summarise(
+    avg_buyer = mean(buyer),
+  )
+malm_d_avg_real
+
+ggplot(malm_d_avg_real, aes(x=p_rank, y=avg_buyer)) + 
+  geom_col(fill="#b3697a", color="#e9ecef", alpha=0.9) + 
+  ggtitle('Mean real response rate per decile')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+```
+
+**5. Generate a report showing the number of customers, the number of buyers of White Truffle Risotto and the response rate to the offer by decile. Summarize and interpret the results.**
+```{r}
+num_customers = nrow(malm)
+num_customers
+
+num_buyers = sum(malm$buyer)
+num_buyers
+
+malm_d %>% group_by(p_rank) %>% summarise(
+  avg_response_rate = mean(buyer),
+  num_customers = n(),
+  num_buyers = sum(buyer)
+)
+```
+
+**6. Generate a report showing the mean values of the independent variables by the probability of purchase decile. **
+
+```{r}
+mean_gender <- malm_d %>% group_by(p_rank) %>% summarise(avg_gender=mean(gender))
+mean_last <- malm_d %>% group_by(p_rank) %>% summarise(avg_last=mean(last))
+mean_meal <- malm_d %>% group_by(p_rank) %>% summarise(avg_meal=mean(`meal$`))
+mean_gluten_free <- malm_d %>% group_by(p_rank) %>% summarise(avg_gluten_free=mean(gluten_free))
+mean_vegetarian <- malm_d %>% group_by(p_rank) %>% summarise(avg_vegetarian=mean(vegetarian))
+mean_seafood <- malm_d %>% group_by(p_rank) %>% summarise(avg_seafood=mean(seafood))
+
+# Gender
+ggplot(mean_gender, aes(x=p_rank, y=avg_gender)) + 
+  geom_col(fill="#b3697a", color="#e9ecef", alpha=0.9) + 
+  ggtitle('Mean of gender by decile')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+
+# Last
+ggplot(mean_last, aes(x=p_rank, y=avg_last)) + 
+  geom_col(fill="#b3697a", color="#e9ecef", alpha=0.9) + 
+  ggtitle('Mean of last by decile')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+
+# Meal
+ggplot(mean_meal, aes(x=p_rank, y=avg_meal)) + 
+  geom_col(fill="#b3697a", color="#e9ecef", alpha=0.9) + 
+  ggtitle('Mean of meal by decile')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+
+# Gluten Free
+ggplot(mean_gluten_free, aes(x=p_rank, y=avg_gluten_free)) + 
+  geom_col(fill="#b3697a", color="#e9ecef", alpha=0.9) + 
+  ggtitle('Mean of gluten free by decile')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+
+# Vegetarian
+ggplot(mean_vegetarian, aes(x=p_rank, y=avg_vegetarian)) + 
+  geom_col(fill="#b3697a", color="#e9ecef", alpha=0.9) + 
+  ggtitle('Mean of vegetarian by decile')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+
+# Seafood
+ggplot(mean_seafood, aes(x=p_rank, y=avg_seafood)) + 
+  geom_col(fill="#b3697a", color="#e9ecef", alpha=0.9) + 
+  ggtitle('Mean of seafood by decile')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+
+```
+
+**7. Use the information from the report above to create a table (and/or chart) showing the lift and cumulative lift for each decile.**
+
+```{r}
+
+#change buyer to 1 true and 0 false
+malm_d$buyer <- as.integer(as.logical(malm_d$buyer))
+
+#add variables (lift & gain, response rate) to malm_d_avg_real, 
+malm_d_avg_real <- malm_d %>% 
+  group_by(p_rank) %>% 
+  summarise(
+    avg_buyer = mean(buyer),
+    customer = length(buyer),
+    buyer = sum(buyer),
+  )
+
+#make lift & gain table
+malm_d_avg_real$cumcustomer <- cumsum(malm_d_avg_real$customer)
+malm_d_avg_real$cumbuyer <- cumsum(malm_d_avg_real$buyer)
+malm_d_avg_real$resprate <- (malm_d_avg_real$buyer/malm_d_avg_real$customer)
+malm_d_avg_real$cumresprate <- (malm_d_avg_real$cumbuyer/malm_d_avg_real$cumcustomer)
+malm_d_avg_real$lift <- (malm_d_avg_real$resprate/mean(malm_d_avg_real$resprate)*100)
+malm_d_avg_real$cumlift <- (malm_d_avg_real$cumresprate/mean(malm_d_avg_real$resprate)*100)
+malm_d_avg_real$gains <- (malm_d_avg_real$buyer/sum(malm_d_avg_real$buyer))
+malm_d_avg_real$cumgains <- (cumsum(malm_d_avg_real$gains))
+
+#lift
+ggplot(data=malm_d_avg_real, aes(x=p_rank, y=lift, group=1)) +
+  geom_line(linetype = "dashed", color = "#69b3a2")+
+  ggtitle('Cumulative lift and lift')+
+  geom_line(data=malm_d_avg_real,aes(p_rank, y=cumlift), color = "#b3697a", linetype = "twodash")+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+
+#gains
+ggplot(data=malm_d_avg_real, aes(x=p_rank, y=gains, group=1)) +
+  geom_line(linetype = "dashed", color = "#69b3a2")+
+  ggtitle('Cumulative gains and gains')+
+  geom_line(data=malm_d_avg_real,aes(x=p_rank, y=cumgains), color = "#b3697a", linetype = "twodash")+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+
+#cum lift + no model
+ggplot(data=malm_d_avg_real, aes(x=p_rank, y=cumlift, group=1)) +
+  geom_line(linetype = "dashed", color = "#69b3a2")+
+  ggtitle('Cumulative lift chart')+
+  geom_hline(yintercept=100, color = "black")+
+  expand_limits(x = 1, y = 0)+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+
+#cum gains + no model
+ggplot(data=malm_d_avg_real, aes(x=p_rank, y=cumgains, group=1)) +
+  geom_line(linetype = "dashed", color = "#69b3a2")+
+  ggtitle('Cumulative gains chart')+
+  geom_abline(intercept = 0, slope = 0.1, color = "black")+
+  expand_limits(x = 1, y = 0)+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+```
+
+**Examining the effectiveness of the RFM analysis. Conduct the sequential RFM analysis** 
+
+```{r}
+
+#RFM
+RFM <- select(malm, last,`total$`, purch, buyer)
+RFM$buyer <- as.integer(as.logical(RFM$buyer)) # convert buyers into 1 true and 0 false
+
+#monetary deciles
+M <- RFM %>%
+  mutate(
+    m_rank = ntile(-`total$`, 10),     # Larger total value = more likely to buy
+  )
+M <- M %>% 
+  group_by(m_rank) %>% 
+  summarise(
+    resprate = mean(buyer),
+  )
+ggplot(M, aes(x=m_rank, y=resprate)) + 
+  geom_col(fill="#69b3a2", color="#e9ecef", alpha=0.9) + 
+  ggtitle('Monetary Deciles')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+
+#recency deciles
+R <- RFM %>%
+  mutate(
+    r_rank = ntile(last, 10),     # Smaller recency value = more likely to buy
+  )
+R <- R %>% 
+  group_by(r_rank) %>% 
+  summarise(
+    resprate = mean(buyer),
+  )
+ggplot(R, aes(x=r_rank, y=resprate)) + 
+  geom_col(fill="#69b3a2", color="#e9ecef", alpha=0.9) + 
+  ggtitle('Recency Deciles')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+#frequency deciles
+F <- RFM %>%
+  mutate(
+    f_rank = ntile(-purch, 10),     # Larger purch value = more likely to buy
+  )
+F <- F %>% 
+  group_by(f_rank) %>% 
+  summarise(
+    resprate = mean(buyer),
+  )
+ggplot(F, aes(x=f_rank, y=resprate)) + 
+  geom_col(fill="#69b3a2", color="#e9ecef", alpha=0.9) + 
+  ggtitle('Frequency Deciles')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7,8,9,10))
+```
+
