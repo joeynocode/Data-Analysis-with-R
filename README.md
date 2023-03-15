@@ -20,4 +20,4 @@ Data Source: MALM.xlsx -Contain records for 50,000 customers
 
 Analysis and Visualizations: MALM Analysis.pdf
 
-R Script: RMF&log.rmd
+R Script: Rcode.rmd
