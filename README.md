@@ -4,7 +4,7 @@ Mock-up Background: As an online non-subscription, prepared meal delivery servic
 
 Objective: experiment with different approaches (logistic and RFM) to improve MALM’s emailing yields and profits.
 
-Data: MALM.xlsx -Contain records for 50,000 customers
+Data Source: MALM.xlsx -Contain records for 50,000 customers
 
 − ACCTNUM : Customer account number 
 
@@ -17,3 +17,7 @@ Data: MALM.xlsx -Contain records for 50,000 customers
 − PURCH : Total number of meals purchase 
 
 − BUYER : Did the customer buy the White Truffle Risotto meal? (1/0)
+
+Analysis and Visualizations: MALM Analysis.pdf
+
+R Script: RMF&log.rmd
