@@ -7,11 +7,13 @@ Objective: experiment with different approaches (logistic and RFM) to improve MA
 Data: MALM.xlsx -Contain records for 50,000 customers
 
 − ACCTNUM : Customer account number 
+
 − GENDER : Customer gender (M = Male, F = Female) 
 
-− ACCTNUM : Customer account number 
-− GENDER : Customer gender (M = Male, F = Female) 
 − LAST : Number of weeks since most recent purchase 
+
 − TOTAL$ : Total dollars spent 
+
 − PURCH : Total number of meals purchase 
+
 − BUYER : Did the customer buy the White Truffle Risotto meal? (1/0)
