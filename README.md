@@ -1,10 +1,14 @@
 # Customer-Analytics-using-R
 
-Mock-up Background: As an online non-subscription, prepared meal delivery service, Meals à la Minute (MALM) has achieved steady growth in its customer base. Yet, while sales have grown steadily, profits began falling when the database got larger, the company diversified its meal selection and increased the number of offers sent to customers. 
+# Mock-up Background
+As an online non-subscription, prepared meal delivery service, Meals à la Minute (MALM) has achieved steady growth in its customer base. Yet, while sales have grown steadily, profits began falling when the database got larger, the company diversified its meal selection and increased the number of offers sent to customers. 
 
-Objective: experiment with different approaches (logistic and RFM) to improve MALM’s emailing yields and profits.
+# Objective
+experiment with different approaches (logistic and RFM) to improve MALM’s emailing yields and profits.
 
-Data Source: MALM.xlsx -Contain records for 50,000 customers
+# Data Source
+
+MALM.xlsx -Contain records for 50,000 customers
 
 − ACCTNUM : Customer account number 
 
