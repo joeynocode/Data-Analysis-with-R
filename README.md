@@ -22,8 +22,8 @@ MALM.xlsx -Contain records for 50,000 customers
 
 − BUYER : Did the customer buy the White Truffle Risotto meal? (1/0)
 
-#Analysis and Visualizations 
+# Analysis and Visualizations 
 MALM Analysis.pdf
 
-#R Script 
+# R Script 
 Rcode.rmd
